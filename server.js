@@ -60,7 +60,7 @@ app.post("/payment/send", (req, res) => {
     txId: "tx_demo_001",
     amount: amount || 0,
     currency: currency || "USDC",
-    recipient: recipient || "recipient_not_provided",
+    to: recipient || "unknown_wallet",
     status: "sent_demo"
   });
 });
