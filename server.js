@@ -31,6 +31,17 @@ app.post("/wallet/connect", (req, res) => {
   });
 });
 
+app.get("/wallet/balance", (req, res) => {
+  const { wallet } = req.query;
+
+  res.json({
+    success: true,
+    wallet: wallet || "0x123demo",
+    balance: "2500",
+    currency: "USDC"
+  });
+});
+
 app.post("/payment/create", (req, res) => {
   const { amount, currency, recipient } = req.body;
 
@@ -51,6 +62,7 @@ app.get("/payment/status", (req, res) => {
     status: "pending_demo"
   });
 });
+
 app.post("/payment/send", (req, res) => {
   const { paymentId, amount, currency, recipient } = req.body;
 
@@ -65,57 +77,6 @@ app.post("/payment/send", (req, res) => {
   });
 });
 
-app.get("/wallet/balance", (req, res) => {
-  res.json({
-    success: true,
-    walletAddress: "0x123demo",
-    balance: "5000",
-    currency: "USDC",
-    status: "demo_balance"
-  });
-});
-
-app.get("/blockchain/history", (req, res) => {
-  res.json({
-    success: true,
-    transactions: [
-      {
-        txId: "tx_demo_001",
-        type: "payment",
-        amount: 250,
-        currency: "USDC",
-        status: "sent_demo"
-      },
-      {
-        txId: "tx_demo_002",
-        type: "payout",
-        amount: 100,
-        currency: "USDC",
-        status: "completed_demo"
-      }
-    ]
-  });
-});
-app.post("/payment/send", (req, res) => {
-  const { amount, to } = req.body;
-
-  res.json({
-    success: true,
-    amount: amount || 0,
-    to: to || "unknown_wallet",
-    txId: "tx_demo_001",
-    status: "sent_demo"
-  });
-});
-
-app.get("/wallet/balance", (req, res) => {
-  res.json({
-    success: true,
-    wallet: "0x123demo",
-    balance: "2500 USDC"
-  });
-});
-
 app.get("/blockchain/history", (req, res) => {
   res.json({
     success: true,
@@ -126,20 +87,7 @@ app.get("/blockchain/history", (req, res) => {
     ]
   });
 });
-app.post("/payment/send", (req,res)=>{
 
- const { from, to, amount } = req.body;
-
- res.json({
-   success:true,
-   txId:"tx_demo_001",
-   from,
-   to,
-   amount,
-   status:"sent_demo"
- });
-
-});
 app.listen(PORT, () => {
   console.log(`CL360 XPay API running on port ${PORT}`);
 });
