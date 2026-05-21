@@ -96,6 +96,36 @@ app.get("/blockchain/history", (req, res) => {
     ]
   });
 });
+app.post("/payment/send", (req, res) => {
+  const { amount, to } = req.body;
+
+  res.json({
+    success: true,
+    amount: amount || 0,
+    to: to || "unknown_wallet",
+    txId: "tx_demo_001",
+    status: "sent_demo"
+  });
+});
+
+app.get("/wallet/balance", (req, res) => {
+  res.json({
+    success: true,
+    wallet: "0x123demo",
+    balance: "2500 USDC"
+  });
+});
+
+app.get("/blockchain/history", (req, res) => {
+  res.json({
+    success: true,
+    history: [
+      "Sent 250 USDC",
+      "Received 100 USDC",
+      "Connected Ethereum wallet"
+    ]
+  });
+});
 app.listen(PORT, () => {
   console.log(`CL360 XPay API running on port ${PORT}`);
 });
