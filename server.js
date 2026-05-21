@@ -126,6 +126,20 @@ app.get("/blockchain/history", (req, res) => {
     ]
   });
 });
+app.post("/payment/send", (req,res)=>{
+
+ const { from, to, amount } = req.body;
+
+ res.json({
+   success:true,
+   txId:"tx_demo_001",
+   from,
+   to,
+   amount,
+   status:"sent_demo"
+ });
+
+});
 app.listen(PORT, () => {
   console.log(`CL360 XPay API running on port ${PORT}`);
 });
