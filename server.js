@@ -51,7 +51,51 @@ app.get("/payment/status", (req, res) => {
     status: "pending_demo"
   });
 });
+app.post("/payment/send", (req, res) => {
+  const { paymentId, amount, currency, recipient } = req.body;
 
+  res.json({
+    success: true,
+    paymentId: paymentId || "xpay_demo_001",
+    txId: "tx_demo_001",
+    amount: amount || 0,
+    currency: currency || "USDC",
+    recipient: recipient || "recipient_not_provided",
+    status: "sent_demo"
+  });
+});
+
+app.get("/wallet/balance", (req, res) => {
+  res.json({
+    success: true,
+    walletAddress: "0x123demo",
+    balance: "5000",
+    currency: "USDC",
+    status: "demo_balance"
+  });
+});
+
+app.get("/blockchain/history", (req, res) => {
+  res.json({
+    success: true,
+    transactions: [
+      {
+        txId: "tx_demo_001",
+        type: "payment",
+        amount: 250,
+        currency: "USDC",
+        status: "sent_demo"
+      },
+      {
+        txId: "tx_demo_002",
+        type: "payout",
+        amount: 100,
+        currency: "USDC",
+        status: "completed_demo"
+      }
+    ]
+  });
+});
 app.listen(PORT, () => {
   console.log(`CL360 XPay API running on port ${PORT}`);
 });
