@@ -1,73 +1,85 @@
-<h1>CL360 XPay</h1>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CL360 XPay</title>
+</head>
+<body style="font-family: Arial; padding: 40px;">
+  <h1>CL360 XPay</h1>
 
-<p>Wallet Connection</p>
+  <button onclick="connectWallet()">Connect Wallet</button>
 
-<button onclick="connectWallet()">
-Connect Wallet
-</button>
+  <h3 id="wallet"></h3>
 
-<br><br>
+  <hr>
 
-<button onclick="sendTransaction()">
-Send Test Transaction
-</button>
+  <h2>Send ETH Payment</h2>
 
-<h3 id="wallet"></h3>
+  <input id="recipient" placeholder="Recipient wallet address" style="width: 420px; padding: 8px;">
+  <br><br>
 
-<script>
-let currentWallet="";
+  <input id="amount" placeholder="Amount in ETH" style="width: 200px; padding: 8px;">
+  <br><br>
 
-async function connectWallet() {
+  <button onclick="sendPayment()">Send Payment</button>
 
- if(!window.ethereum){
-   alert("MetaMask not found");
-   return;
- }
+  <h3 id="status"></h3>
 
- const accounts =
- await window.ethereum.request({
-   method:"eth_requestAccounts"
- });
+  <script>
+    let currentWallet = "";
 
- currentWallet=accounts[0];
+    async function connectWallet() {
+      if (!window.ethereum) {
+        alert("MetaMask not found");
+        return;
+      }
 
- document.getElementById("wallet").innerText =
- "Connected: " + currentWallet;
+      const accounts = await window.ethereum.request({
+        method: "eth_requestAccounts"
+      });
 
-}
+      currentWallet = accounts[0];
 
-async function sendTransaction(){
+      document.getElementById("wallet").innerText =
+        "Connected: " + currentWallet;
+    }
 
- if(!currentWallet){
-   alert("Connect wallet first");
-   return;
- }
+    function ethToHexWei(ethAmount) {
+      const wei = BigInt(Math.floor(Number(ethAmount) * 1e18));
+      return "0x" + wei.toString(16);
+    }
 
- try{
+    async function sendPayment() {
+      if (!currentWallet) {
+        alert("Connect wallet first");
+        return;
+      }
 
- await window.ethereum.request({
+      const recipient = document.getElementById("recipient").value;
+      const amount = document.getElementById("amount").value;
 
- method:"eth_sendTransaction",
+      if (!recipient || !amount) {
+        alert("Enter recipient and amount");
+        return;
+      }
 
- params:[{
+      try {
+        const txHash = await window.ethereum.request({
+          method: "eth_sendTransaction",
+          params: [{
+            from: currentWallet,
+            to: recipient,
+            value: ethToHexWei(amount)
+          }]
+        });
 
- from:currentWallet,
+        document.getElementById("status").innerText =
+          "Transaction sent: " + txHash;
 
- to:currentWallet,
-
- value:"0x1"
-
- }]
-
- });
-
- alert("Transaction sent");
-
- } catch(err){
-
- alert("Transaction cancelled");
-
- }
-
-}
-</script>
+      } catch (err) {
+        document.getElementById("status").innerText =
+          "Transaction cancelled or failed.";
+      }
+    }
+  </script>
+</body>
+</html>
