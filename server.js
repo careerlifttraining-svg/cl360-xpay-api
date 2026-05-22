@@ -17,7 +17,10 @@ app.get("/", (req, res) => {
 });
 
 app.get("/ping", (req, res) => {
-  res.json({ success: true, message: "pong" });
+  res.json({
+    success: true,
+    message: "pong"
+  });
 });
 
 app.post("/wallet/connect", (req, res) => {
@@ -49,7 +52,7 @@ app.post("/payment/create", (req, res) => {
     success: true,
     paymentId: "xpay_demo_001",
     amount: amount || 0,
-    currency: currency || "USD",
+    currency: currency || "USDC",
     recipient: recipient || "recipient_not_provided",
     status: "created_demo"
   });
@@ -89,5 +92,5 @@ app.get("/blockchain/history", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`CL360 XPay API running on port ${PORT}`);
+  console.log("CL360 XPay API running on port " + PORT);
 });
