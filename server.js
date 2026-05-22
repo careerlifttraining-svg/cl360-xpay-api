@@ -1,26 +1,20 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static(__dirname));
 
 app.get("/", (req, res) => {
-  res.json({
-    success: true,
-    app: "CL360 XPay API",
-    status: "live",
-    version: "1.0.0"
-  });
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
 app.get("/ping", (req, res) => {
-  res.json({
-    success: true,
-    message: "pong"
-  });
+  res.json({ success: true, message: "pong" });
 });
 
 app.post("/wallet/connect", (req, res) => {
