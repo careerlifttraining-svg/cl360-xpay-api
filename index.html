@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CL360 XPay</title>
+</head>
+<body style="font-family: Arial; text-align: center; padding: 40px;">
+  <h1>CL360 XPay</h1>
+  <p>Connect your MetaMask wallet</p>
+
+  <button onclick="connectWallet()" style="padding: 12px 20px;">
+    Connect Wallet
+  </button>
+
+  <h3 id="wallet"></h3>
+
+  <script>
+    async function connectWallet() {
+      if (!window.ethereum) {
+        alert("MetaMask not found. Please install MetaMask.");
+        return;
+      }
+
+      const accounts = await window.ethereum.request({
+        method: "eth_requestAccounts"
+      });
+
+      document.getElementById("wallet").innerText =
+        "Connected: " + accounts[0];
+    }
+  </script>
+</body>
+</html>
