@@ -1,0 +1,103 @@
+openapi: 3.1.0
+info:
+  title: CL360 xPay Finance Guard API
+  version: 0.1.0
+  description: >-
+    Read-only sandbox finance operations for CareerLift360 LLC. This API does not
+    move funds, create tokens, provide investment advice, or expose payment-card data.
+servers:
+  - url: https://www.cl360ai.com
+    description: Production domain; update if the API is deployed on a subdomain.
+paths:
+  /api/gpt/finance-summary:
+    get:
+      operationId: getFinanceSummary
+      summary: Get a sandbox finance summary
+      description: Returns aggregate operational metrics. Treat all results as sandbox data, not financial advice.
+      responses:
+        "200":
+          description: Finance summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceSummary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/gpt/invoices:
+    get:
+      operationId: listInvoices
+      summary: List sandbox invoices
+      description: Returns invoice workflow fields without card data or privileged engagement details.
+      responses:
+        "200":
+          description: Invoice list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mode: { type: string }
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Invoice" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/gpt/customers:
+    get:
+      deprecated: true
+      operationId: listCustomers
+      summary: List customer directory records
+      description: Disabled in the public sandbox while CUSTOMER_DATA_ENABLED is false.
+      responses:
+        "200":
+          description: Customer list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mode: { type: string }
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Customer" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  responses:
+    Unauthorized:
+      description: Missing or invalid GPT Actions bearer key
+  schemas:
+    FinanceSummary:
+      type: object
+      properties:
+        workspace: { type: string }
+        mode: { type: string, enum: [sandbox] }
+        currency: { type: string }
+        grossVolumeCents: { type: integer }
+        successfulPayments: { type: integer }
+        outstandingInvoiceCents: { type: integer }
+        activeCustomers: { type: integer }
+        disclaimer: { type: string }
+    Invoice:
+      type: object
+      properties:
+        id: { type: string }
+        number: { type: string }
+        customerName: { type: string }
+        amount: { type: integer, description: Amount in cents }
+        status: { type: string }
+        dueAt: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+    Customer:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        company: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+security:
+  - bearerAuth: []

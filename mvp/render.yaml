@@ -1,0 +1,47 @@
+services:
+  - type: web
+    name: cl360-xpay-mvp
+    runtime: node
+    plan: starter
+    region: ohio
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: 22.22.2
+      - key: NODE_ENV
+        value: production
+      - key: APP_URL
+        value: https://api.cl360ai.com
+      - key: PUBLIC_SITE_URL
+        value: https://www.cl360ai.com
+      - key: XPAY_PUBLIC_URL
+        value: https://api.cl360ai.com/xpay
+      - key: DEMO_AUTH
+        value: "true"
+      - key: CUSTOMER_DATA_ENABLED
+        value: "false"
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: STRIPE_CHECKOUT_ENABLED
+        value: "false"
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_WEBHOOK_TOLERANCE_SECONDS
+        value: "300"
+      - key: PAYPAL_ENABLED
+        value: "false"
+      - key: CRYPTO_PAYMENTS_ENABLED
+        value: "false"
+      - key: GPT_ACTIONS_ENABLED
+        value: "false"
+      - key: GPT_ACTIONS_API_KEY
+        sync: false
+      - key: CFO_WEBHOOK_URL
+        sync: false
+      - key: CFO_WEBHOOK_SECRET
+        sync: false
