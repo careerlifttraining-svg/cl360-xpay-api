@@ -62,7 +62,7 @@ app.post('/api/payment-links',requireRole('admin','finance'),async (req: Request
  if(!Number.isInteger(amount)||amount<50||amount>1_000_000)return res.status(400).json({error:'Amount must be an integer from 50 to 1000000 cents'});
  const key=process.env.STRIPE_SECRET_KEY||'';
  const enabled=String(process.env.STRIPE_CHECKOUT_ENABLED??'').toLowerCase()==='true';
- if(!enabled||!key.startsWith('sk_test_'))return res.status(503).json({error:'Stripe test Checkout is not enabled'});
+if(!enabled||!(key.startsWith('sk_test_')||key.startsWith('sk_live_')))return res.status(503).json({error:'Stripe Checkout is not enabled'});
  const stripe=new Stripe(key);
  const product=await stripe.products.create({name:title,metadata:{workspace:'careerLift360'}});
  const price=await stripe.prices.create({currency:'usd',unit_amount:amount,product:product.id});
