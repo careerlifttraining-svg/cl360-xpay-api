@@ -22,7 +22,7 @@ services:
       - key: DEMO_AUTH
         value: "true"
       - key: CUSTOMER_DATA_ENABLED
-        value: "false"
+        value: "true"
       - key: SESSION_SECRET
         generateValue: true
       - key: STRIPE_CHECKOUT_ENABLED
