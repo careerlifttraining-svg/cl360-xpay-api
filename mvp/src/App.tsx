@@ -31,7 +31,7 @@ function App(){
    <main id="main">
     {notice&&<div className="toast" role="status"><Check size={18}/>{notice}</div>}
     <div className="welcome"><div><p className="eyebrow">CL360 xPAY WORKSPACE</p><h1>{view==='Overview'?'Good afternoon, Dr. Riggins.':view}</h1><p>{view==='Overview'?'Here’s how CareerLift360 is moving today.':'Manage your '+view.toLowerCase()+' in a secure test workspace.'}</p></div><button className="primary" onClick={()=>setModal(true)}><Plus size={18}/> Create payment</button></div>
-    <div className="sandbox"><ShieldCheck size={19}/><span><b>{apiReady===false?'Dashboard preview mode.':'You’re safely in sandbox mode.'}</b> {apiReady===false?'Start the API to create test records.':'No real funds can move from this workspace.'}</span><a href="https://www.cl360ai.com">CL360AI.com <ArrowUpRight size={15}/></a></div>
+    <div className="sandbox"><ShieldCheck size={19}/><span><b>{apiReady===false?'Dashboard preview mode.':'Production workspace.'}</b> {apiReady===false?'Start the API to create test records.':'No real funds can move from this workspace.'}</span><a href="https://www.cl360ai.com">CL360AI.com <ArrowUpRight size={15}/></a></div>
     {view==='Overview'?<Overview onCreate={()=>setModal(true)}/>:<DataView view={view}/>} 
     <footer><span>© 2026 CareerLift360 LLC</span><a href="https://www.cl360ai.com">www.cl360ai.com</a><nav><a href="https://www.cl360ai.com">CareerLift360 home</a><a href="#security">Security</a><a href="#privacy">Privacy</a></nav></footer>
    </main>
