@@ -67,8 +67,8 @@ app.post('/api/payment-links',requireRole('admin','finance'),async (req: Request
  const price=await stripe.prices.create({currency:'usd',unit_amount:amount,product:product.id});
  const link=await stripe.paymentLinks.create({line_items:[{price:price.id,quantity:1}],metadata:{workspace:'careerLift360',title,amount:String(amount)}});
  audit('payment_link.stripe_created','demo-admin',{paymentLinkId:link.id});
- return res.status(201).json({id:link.id,workspaceId:'careerLift360',title,amount,currency:'usd',mode:'stripe_test',url:link.url,status:'Active',createdAt:new Date(link.created*1000).toISOString()});
-});
+return res.status(201).json({id:link.id,workspaceId:'careerLift360',title,amount,currency:'usd',mode:'stripe_test',url:link.url,status:'Active',createdAt:new Date().toISOString()});
+}); 
 app.post('/api/integrations/cfo/events',requireRole('admin','finance'),(req: Request, res: Response)=>{audit('cfo.event.queued','demo-admin',{type:req.body.type});res.status(202).json({queued:true});});
 app.post('/api/paypal/orders',(_req: Request, res: Response)=>res.status(501).json({error:'PayPal sandbox adapter is disabled until sandbox credentials are configured'}));
 app.post('/api/crypto/checkout',(_req: Request, res: Response)=>res.status(process.env.CRYPTO_PAYMENTS_ENABLED==='true'?501:404).json({error:'Crypto payments are disabled by feature flag'}));
