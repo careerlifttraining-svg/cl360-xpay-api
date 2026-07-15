@@ -78,3 +78,4 @@ if(process.env.NODE_ENV==='production'){app.use(express.static(distPath,{index:f
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction)=>{console.error(err);res.status(500).json({error:'Unexpected server error',requestId:crypto.randomUUID()});});
 if(process.env.STRIPE_SECRET_KEY?.startsWith('sk_live_'))throw new Error('Live Stripe keys are prohibited until the production-processing gate is implemented and approved.');
 app.listen(port,'0.0.0.0',()=>console.log(`CL360 xPay API listening in sandbox mode on port ${port}`));
+if(process.env.STRIPE_SECRET_KEY?.startsWith('sk_live_'))throw new Error('Live Stripe keys are prohibited until the production-processing gate is implemented and approved.');
