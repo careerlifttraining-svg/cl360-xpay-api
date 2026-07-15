@@ -53,8 +53,8 @@ app.get('/api/payment-links',requireRole('admin','finance','support','viewer'),a
   const links=await stripe.paymentLinks.list({limit:100,active:true});
  return res.json({data:links.data.map(link=>({id:link.id,workspaceId:'careerLift360',title:link.metadata?.title||'CL360 xPay service',amount:Number(link.metadata?.amount||0),currency:'usd',mode:'stripe_test',url:link.url,status:link.active?'Active':'Inactive',createdAt:new Date().toISOString()}))});
  }
-return res.json({data:paymentLinks});
-});
+const amount=Number(req.body.amount);
+app.post('/api/payment-links',requireRole('admin','finance'),async (req: Request,res: Response)=>{
  const amount=Number(req.body.amount);
  const title=String(req.body.title||'CL360 xPay service').trim();
  if(!title)return res.status(400).json({error:'Payment title is required'});
