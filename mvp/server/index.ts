@@ -51,9 +51,10 @@ app.get('/api/payment-links',requireRole('admin','finance','support','viewer'),a
  if(enabled&&key.startsWith('sk_test_')){
   const stripe=new Stripe(key);
   const links=await stripe.paymentLinks.list({limit:100,active:true});
- return res.json({data:links.data.map(link=>({id:link.id,workspaceId:'careerLift360',title:link.metadata?.title||'CL360 xPay service',amount:Number(link.metadata?.amount||0),currency:'usd',mode:'stripe_test',url:link.url,status:link.active?'Active':'Inactive',createdAt:new Date().toISOString()}))});
+  return res.json({data:links.data.map(link=>({id:link.id,workspaceId:'careerLift360',title:link.metadata?.title||'CL360 xPay service',amount:Number(link.metadata?.amount||0),currency:'usd',mode:'stripe_test',url:link.url,status:link.active?'Active':'Inactive',createdAt:new Date().toISOString()}))});
  }
-const amount=Number(req.body.amount);
+ return res.json({data:paymentLinks});
+});
 app.post('/api/payment-links',requireRole('admin','finance'),async (req: Request,res: Response)=>{
  const amount=Number(req.body.amount);
  const title=String(req.body.title||'CL360 xPay service').trim();
@@ -67,8 +68,8 @@ app.post('/api/payment-links',requireRole('admin','finance'),async (req: Request
  const price=await stripe.prices.create({currency:'usd',unit_amount:amount,product:product.id});
  const link=await stripe.paymentLinks.create({line_items:[{price:price.id,quantity:1}],metadata:{workspace:'careerLift360',title,amount:String(amount)}});
  audit('payment_link.stripe_created','demo-admin',{paymentLinkId:link.id});
-return res.status(201).json({id:link.id,workspaceId:'careerLift360',title,amount,currency:'usd',mode:'stripe_test',url:link.url,status:'Active',createdAt:new Date().toISOString()});
-}); 
+ return res.status(201).json({id:link.id,workspaceId:'careerLift360',title,amount,currency:'usd',mode:'stripe_test',url:link.url,status:'Active',createdAt:new Date().toISOString()});
+});
 app.post('/api/integrations/cfo/events',requireRole('admin','finance'),(req: Request, res: Response)=>{audit('cfo.event.queued','demo-admin',{type:req.body.type});res.status(202).json({queued:true});});
 app.post('/api/paypal/orders',(_req: Request, res: Response)=>res.status(501).json({error:'PayPal sandbox adapter is disabled until sandbox credentials are configured'}));
 app.post('/api/crypto/checkout',(_req: Request, res: Response)=>res.status(process.env.CRYPTO_PAYMENTS_ENABLED==='true'?501:404).json({error:'Crypto payments are disabled by feature flag'}));
