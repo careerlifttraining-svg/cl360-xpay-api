@@ -48,7 +48,7 @@ app.post('/api/invoices',requireRole('admin','finance'),(req: Request, res: Resp
 app.get('/api/payment-links',requireRole('admin','finance','support','viewer'),async (_req: Request,res: Response)=>{
  const key=process.env.STRIPE_SECRET_KEY||'';
  const enabled=String(process.env.STRIPE_CHECKOUT_ENABLED??'').toLowerCase()==='true';
- if(enabled&&key.startsWith('sk_test_')){
+ if(enabled&&(key.startsWith('sk_test_')||key.startsWith('sk_live_'))){
   const stripe=new Stripe(key);
   const links=await stripe.paymentLinks.list({limit:100,active:true});
   return res.json({data:links.data.map(link=>({id:link.id,workspaceId:'careerLift360',title:link.metadata?.title||'CL360 xPay service',amount:Number(link.metadata?.amount||0),currency:'usd',mode:'stripe_test',url:link.url,status:link.active?'Active':'Inactive',createdAt:new Date().toISOString()}))});
