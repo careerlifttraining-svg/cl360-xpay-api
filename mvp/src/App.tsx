@@ -104,7 +104,7 @@ function App(){
      <button key={name} className={view===name?'active':''} onClick={()=>select(name)}>
       <Icon size={19}/>
       <span>{name}</span>
-      {false&&<i>3</i>}
+      
      </button>
     )}
    </nav>
