@@ -61,9 +61,9 @@ export async function reconcileVerifiedStripeWebhook(
   stripe: Stripe,
   store: ReconciliationStore,
 ): Promise<'inserted' | 'duplicate'> {
+  if (process.env.XPAY_STRIPE_MODE !== 'test') throw new Error('Stripe webhook staging requires test mode');
   if (!signature || !webhookSecret) throw new Error('Missing Stripe webhook signature or secret');
   const event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
-  if (process.env.XPAY_STRIPE_MODE !== 'test') throw new Error('Stripe webhook staging requires test mode');
   if (event.livemode) throw new Error('Live Stripe events are disabled in staging');
   return store.applyEventOnce(normalizeStripeEvent(event));
 }
