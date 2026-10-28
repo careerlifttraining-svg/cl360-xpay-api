@@ -20,12 +20,12 @@ app.post('/api/webhooks/stripe',express.raw({type:'application/json'}),(req: Req
  if(!signature)return res.status(400).json({error:'Missing Stripe signature'});
  try{const stripe=new Stripe(key);const event=stripe.webhooks.constructEvent(req.body,signature,secret,Number(process.env.STRIPE_WEBHOOK_TOLERANCE_SECONDS||300));
   if(event.livemode)return res.status(400).json({error:'Live Stripe events are disabled'});
-  if(processedStripeEvents.has(event.id))return res.json({received:true,duplicate:true});processedStripeEvents.add(event.id);
-  if(processedStripeEvents.size>5000)processedStripeEvents.delete(processedStripeEvents.values().next().value!);
   const supported=['checkout.session.completed','checkout.session.expired','checkout.session.async_payment_succeeded','checkout.session.async_payment_failed','invoice.paid','invoice.payment_failed','payment_intent.succeeded','payment_intent.payment_failed','charge.refunded'];
   // Never acknowledge a financial event as processed before it is stored durably.
   // A 503 instructs Stripe to retry while reconciliation storage is not configured.
   if(supported.includes(event.type))return res.status(503).json({error:'Durable webhook reconciliation is not yet enabled'});
+  if(processedStripeEvents.has(event.id))return res.json({received:true,duplicate:true});processedStripeEvents.add(event.id);
+  if(processedStripeEvents.size>5000)processedStripeEvents.delete(processedStripeEvents.values().next().value!);
   audit(supported.includes(event.type)?`stripe.${event.type}`:'stripe.event.ignored','stripe-webhook',{eventId:event.id,type:event.type,livemode:event.livemode});return res.json({received:true});
  }catch{return res.status(400).json({error:'Invalid Stripe webhook signature'});}
 });
