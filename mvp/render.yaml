@@ -20,19 +20,23 @@ services:
       - key: XPAY_PUBLIC_URL
         value: https://cl360-xpay-mvp.onrender.com/xpay
       - key: DEMO_AUTH
-        value: "true"
+        value: "false"
       - key: CUSTOMER_DATA_ENABLED
-        value: "true"
+        value: "false"
       - key: SESSION_SECRET
         generateValue: true
       - key: STRIPE_CHECKOUT_ENABLED
-        value: "true"
+        value: "false"
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
       - key: STRIPE_WEBHOOK_TOLERANCE_SECONDS
         value: "300"
+      - key: XPAY_STAGING_WEBHOOK_ENABLED
+        value: "false"
+      - key: XPAY_LIVE_PAYMENT_LINKS_APPROVED
+        value: "false"
       - key: PAYPAL_ENABLED
         value: "false"
       - key: CRYPTO_PAYMENTS_ENABLED
