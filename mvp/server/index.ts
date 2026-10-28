@@ -9,6 +9,9 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const app=express(); const port=Number(process.env.PORT||8787); const processedStripeEvents=new Set<string>();
+// Fail closed: live Stripe link creation requires an explicit, separately reviewed release flag.
+const stripeMode=(key:string)=>key.startsWith('sk_live_')?'live':key.startsWith('sk_test_')?'test':'unconfigured';
+const liveLinkCreationApproved=()=>process.env.XPAY_LIVE_PAYMENT_LINKS_APPROVED==='true';
 app.use(helmet({contentSecurityPolicy:process.env.NODE_ENV==='production'?undefined:false}));
 app.use(cors({origin:process.env.APP_URL||'http://localhost:5173'}));
 app.post('/api/webhooks/stripe',express.raw({type:'application/json'}),(req: Request, res: Response)=>{
@@ -51,7 +54,7 @@ app.get('/api/payment-links',requireRole('admin','finance','support','viewer'),a
  if(enabled&&(key.startsWith('sk_test_')||key.startsWith('sk_live_'))){
   const stripe=new Stripe(key);
   const links=await stripe.paymentLinks.list({limit:100,active:true});
-  return res.json({data:links.data.map(link=>({id:link.id,workspaceId:'careerLift360',title:link.metadata?.title||'CL360 xPay service',amount:Number(link.metadata?.amount||0),currency:'usd',mode:'stripe_test',url:link.url,status:link.active?'Active':'Inactive',createdAt:new Date().toISOString()}))});
+  return res.json({data:links.data.map(link=>({id:link.id,workspaceId:'careerLift360',title:link.metadata?.title||'CL360 xPay service',amount:Number(link.metadata?.amount||0),currency:'usd',mode:stripeMode(key),url:link.url,status:link.active?'Active':'Inactive',createdAt:new Date().toISOString()}))});
  }
  return res.json({data:paymentLinks});
 });
@@ -63,12 +66,13 @@ app.post('/api/payment-links',requireRole('admin','finance'),async (req: Request
  const key=process.env.STRIPE_SECRET_KEY||'';
  const enabled=String(process.env.STRIPE_CHECKOUT_ENABLED??'').toLowerCase()==='true';
 if(!enabled||!(key.startsWith('sk_test_')||key.startsWith('sk_live_')))return res.status(503).json({error:'Stripe Checkout is not enabled'});
+ if(stripeMode(key)==='live'&&!liveLinkCreationApproved())return res.status(503).json({error:'Live payment link creation is disabled pending production readiness approval'});
  const stripe=new Stripe(key);
  const product=await stripe.products.create({name:title,metadata:{workspace:'careerLift360'}});
  const price=await stripe.prices.create({currency:'usd',unit_amount:amount,product:product.id});
  const link=await stripe.paymentLinks.create({line_items:[{price:price.id,quantity:1}],metadata:{workspace:'careerLift360',title,amount:String(amount)}});
  audit('payment_link.stripe_created','demo-admin',{paymentLinkId:link.id});
- return res.status(201).json({id:link.id,workspaceId:'careerLift360',title,amount,currency:'usd',mode:'stripe_test',url:link.url,status:'Active',createdAt:new Date().toISOString()});
+ return res.status(201).json({id:link.id,workspaceId:'careerLift360',title,amount,currency:'usd',mode:stripeMode(key),url:link.url,status:'Active',createdAt:new Date().toISOString()});
 });
 app.post('/api/integrations/cfo/events',requireRole('admin','finance'),(req: Request, res: Response)=>{audit('cfo.event.queued','demo-admin',{type:req.body.type});res.status(202).json({queued:true});});
 app.post('/api/paypal/orders',(_req: Request, res: Response)=>res.status(501).json({error:'PayPal sandbox adapter is disabled until sandbox credentials are configured'}));
