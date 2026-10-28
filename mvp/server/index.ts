@@ -22,7 +22,10 @@ app.post('/api/webhooks/stripe',express.raw({type:'application/json'}),(req: Req
   if(event.livemode)return res.status(400).json({error:'Live Stripe events are disabled'});
   if(processedStripeEvents.has(event.id))return res.json({received:true,duplicate:true});processedStripeEvents.add(event.id);
   if(processedStripeEvents.size>5000)processedStripeEvents.delete(processedStripeEvents.values().next().value!);
-  const supported=['checkout.session.completed','checkout.session.expired','payment_intent.succeeded','payment_intent.payment_failed'];
+  const supported=['checkout.session.completed','checkout.session.expired','checkout.session.async_payment_succeeded','checkout.session.async_payment_failed','invoice.paid','invoice.payment_failed','payment_intent.succeeded','payment_intent.payment_failed','charge.refunded'];
+  // Never acknowledge a financial event as processed before it is stored durably.
+  // A 503 instructs Stripe to retry while reconciliation storage is not configured.
+  if(supported.includes(event.type))return res.status(503).json({error:'Durable webhook reconciliation is not yet enabled'});
   audit(supported.includes(event.type)?`stripe.${event.type}`:'stripe.event.ignored','stripe-webhook',{eventId:event.id,type:event.type,livemode:event.livemode});return res.json({received:true});
  }catch{return res.status(400).json({error:'Invalid Stripe webhook signature'});}
 });
@@ -33,7 +36,7 @@ const customers:SandboxRecord[]=[{id:'cus_demo_horizon',workspaceId:'careerLift3
 const invoices:SandboxRecord[]=[{id:'inv_demo_001',workspaceId:'careerLift360',number:'INV-000124',customerName:'Northline Legal',amount:320000,status:'sent',dueAt:'2026-07-30',createdAt:'2026-07-12T16:00:00.000Z'}];
 const paymentLinks:SandboxRecord[]=[];
 const audit=(action:string,actor='demo-admin',metadata={})=>events.unshift({id:crypto.randomUUID(),action,actor,metadata,at:new Date().toISOString()});
-const requireRole=(...allowed:string[])=>(req: Request, res: Response, next: NextFunction)=>{const role=String(req.header('x-demo-role')||'admin');if(!allowed.includes(role))return res.status(403).json({error:'Insufficient role'});next()};
+const requireRole=(...allowed:string[])=>(req: Request, res: Response, next: NextFunction)=>{if(process.env.NODE_ENV==='production')return res.status(503).json({error:'Staff authentication is not configured for production'});const role=String(req.header('x-demo-role')||'admin');if(!allowed.includes(role))return res.status(403).json({error:'Insufficient role'});next()};
 const requireCustomerData=(req: Request, res: Response, next: NextFunction)=>String(process.env.CUSTOMER_DATA_ENABLED ?? '').toLowerCase()==='true'?next():res.status(404).json({error:'Customer data is disabled'});
 const requireGptAction=(req: Request, res: Response, next: NextFunction)=>{if(String(process.env.GPT_ACTIONS_ENABLED ?? '').toLowerCase()!=='true')return res.status(404).json({error:'GPT Actions are disabled'});const supplied=req.header('authorization')?.replace(/^Bearer\s+/i,'')||'';const expected=process.env.GPT_ACTIONS_API_KEY||'';if(!expected||supplied.length!==expected.length||!crypto.timingSafeEqual(Buffer.from(supplied),Buffer.from(expected)))return res.status(401).json({error:'Unauthorized'});next()};
 
