@@ -7,27 +7,36 @@ import Stripe from 'stripe';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {createStagingReconciliationStore} from './postgres-reconciliation.js';
+import {reconcileVerifiedStripeWebhook} from './stripe-reconciliation.js';
 
-const app=express(); const port=Number(process.env.PORT||8787); const processedStripeEvents=new Set<string>();
+const app=express(); const port=Number(process.env.PORT||8787);
+const stagingWebhookEnabled=process.env.XPAY_STAGING_WEBHOOK_ENABLED==='true';
+const stagingReconciliation=stagingWebhookEnabled?createStagingReconciliationStore():null;
 // Fail closed: live Stripe link creation requires an explicit, separately reviewed release flag.
 const stripeMode=(key:string)=>key.startsWith('sk_live_')?'live':key.startsWith('sk_test_')?'test':'unconfigured';
 const liveLinkCreationApproved=()=>process.env.XPAY_LIVE_PAYMENT_LINKS_APPROVED==='true';
 app.use(helmet({contentSecurityPolicy:process.env.NODE_ENV==='production'?undefined:false}));
 app.use(cors({origin:process.env.APP_URL||'http://localhost:5173'}));
-app.post('/api/webhooks/stripe',express.raw({type:'application/json'}),(req: Request, res: Response)=>{
+app.post('/api/webhooks/stripe',express.raw({type:'application/json'}),async (req: Request, res: Response)=>{
  const secret=process.env.STRIPE_WEBHOOK_SECRET||'',key=process.env.STRIPE_SECRET_KEY||'',signature=req.header('stripe-signature');
- if(!key.startsWith('sk_test_')||!secret.startsWith('whsec_'))return res.status(503).json({error:'Stripe test webhook is not configured'});
+ if(!key.startsWith('sk_test_')||!secret.startsWith('whsec_')||process.env.XPAY_STRIPE_MODE!=='test')return res.status(503).json({error:'Stripe test webhook is not configured'});
  if(!signature)return res.status(400).json({error:'Missing Stripe signature'});
- try{const stripe=new Stripe(key);const event=stripe.webhooks.constructEvent(req.body,signature,secret,Number(process.env.STRIPE_WEBHOOK_TOLERANCE_SECONDS||300));
-  if(event.livemode)return res.status(400).json({error:'Live Stripe events are disabled'});
-  const supported=['checkout.session.completed','checkout.session.expired','checkout.session.async_payment_succeeded','checkout.session.async_payment_failed','invoice.paid','invoice.payment_failed','payment_intent.succeeded','payment_intent.payment_failed','charge.refunded'];
-  // Never acknowledge a financial event as processed before it is stored durably.
-  // A 503 instructs Stripe to retry while reconciliation storage is not configured.
-  if(supported.includes(event.type))return res.status(503).json({error:'Durable webhook reconciliation is not yet enabled'});
-  if(processedStripeEvents.has(event.id))return res.json({received:true,duplicate:true});processedStripeEvents.add(event.id);
-  if(processedStripeEvents.size>5000)processedStripeEvents.delete(processedStripeEvents.values().next().value!);
-  audit(supported.includes(event.type)?`stripe.${event.type}`:'stripe.event.ignored','stripe-webhook',{eventId:event.id,type:event.type,livemode:event.livemode});return res.json({received:true});
- }catch{return res.status(400).json({error:'Invalid Stripe webhook signature'});}
+ if(!Buffer.isBuffer(req.body))return res.status(400).json({error:'Expected raw Stripe webhook body'});
+ const stripe=new Stripe(key);
+ let event: Stripe.Event;
+ try {event=stripe.webhooks.constructEvent(req.body,signature,secret,Number(process.env.STRIPE_WEBHOOK_TOLERANCE_SECONDS||300));}
+ catch {return res.status(400).json({error:'Invalid Stripe webhook signature'});}
+ if(event.livemode)return res.status(400).json({error:'Live Stripe events are disabled'});
+ // All event types require durable storage; no in-memory deduplication or false acknowledgments.
+ if(!stagingReconciliation)return res.status(503).json({error:'Staging reconciliation is not enabled'});
+ try {
+  const result=await reconcileVerifiedStripeWebhook(req.body,signature,secret,stripe,stagingReconciliation.store);
+  return res.json({received:true,duplicate:result==='duplicate'});
+ }catch(error){
+  console.error('Stripe webhook reconciliation failed',error);
+  return res.status(503).json({error:'Stripe event persistence failed; retry required'});
+ }
 });
 app.use(express.json({limit:'100kb'}));
 const events:Array<Record<string,unknown>>=[];
@@ -40,7 +49,7 @@ const requireRole=(...allowed:string[])=>(req: Request, res: Response, next: Nex
 const requireCustomerData=(req: Request, res: Response, next: NextFunction)=>String(process.env.CUSTOMER_DATA_ENABLED ?? '').toLowerCase()==='true'?next():res.status(404).json({error:'Customer data is disabled'});
 const requireGptAction=(req: Request, res: Response, next: NextFunction)=>{if(String(process.env.GPT_ACTIONS_ENABLED ?? '').toLowerCase()!=='true')return res.status(404).json({error:'GPT Actions are disabled'});const supplied=req.header('authorization')?.replace(/^Bearer\s+/i,'')||'';const expected=process.env.GPT_ACTIONS_API_KEY||'';if(!expected||supplied.length!==expected.length||!crypto.timingSafeEqual(Buffer.from(supplied),Buffer.from(expected)))return res.status(401).json({error:'Unauthorized'});next()};
 
-app.get('/api/health',(_req: Request, res: Response)=>res.json({ok:true,mode:'sandbox',liveProcessing:false,providers:{stripeTestConfigured:Boolean(process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_')),stripeCheckoutEnabled:String(process.env.STRIPE_CHECKOUT_ENABLED ?? '').toLowerCase()==='true',stripeWebhookConfigured:Boolean(process.env.STRIPE_WEBHOOK_SECRET?.startsWith('whsec_')),paypal:process.env.PAYPAL_ENABLED==='true',crypto:process.env.CRYPTO_PAYMENTS_ENABLED==='true'}}));
+app.get('/api/health',(_req: Request, res: Response)=>res.json({ok:true,mode:'sandbox',liveProcessing:false,stagingWebhookEnabled:Boolean(stagingReconciliation),providers:{stripeTestConfigured:Boolean(process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_')),stripeCheckoutEnabled:String(process.env.STRIPE_CHECKOUT_ENABLED ?? '').toLowerCase()==='true',stripeWebhookConfigured:Boolean(process.env.STRIPE_WEBHOOK_SECRET?.startsWith('whsec_')),paypal:process.env.PAYPAL_ENABLED==='true',crypto:process.env.CRYPTO_PAYMENTS_ENABLED==='true'}}));
 app.get('/api/gpt/finance-summary',requireGptAction,(_req: Request, res: Response)=>res.status(503).json({error:'Verified financial summary is unavailable until Stripe reconciliation is enabled',verified:false}));
 app.get('/api/gpt/invoices',requireGptAction,(_req: Request, res: Response)=>{audit('gpt.invoices.read','finance-guard-gpt');res.json({mode:'sandbox',data:invoices.map(({id,number,customerName,amount,status,dueAt,createdAt})=>({id,number,customerName,amount,status,dueAt,createdAt}))});});
 app.get('/api/gpt/customers',requireGptAction,requireCustomerData,(_req: Request, res: Response)=>{audit('gpt.customers.read','finance-guard-gpt');res.json({mode:'sandbox',data:customers.map(({id,name,company,createdAt})=>({id,name,company,createdAt}))});});
