@@ -9,7 +9,8 @@
     "dev:api": "tsx watch server/index.ts",
     "build": "tsc -b && vite build",
     "start": "tsx server/index.ts",
-    "check": "tsc -b --pretty false"
+    "check": "tsc -b --pretty false",
+    "test": "tsx --test server/*.test.ts"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
