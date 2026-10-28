@@ -1,5 +1,4 @@
 import Stripe from 'stripe';
-import crypto from 'node:crypto';
 
 /**
  * Storage-neutral reconciliation boundary. Implement ReconciliationStore using
@@ -64,13 +63,8 @@ export async function reconcileVerifiedStripeWebhook(
 ): Promise<'inserted' | 'duplicate'> {
   if (!signature || !webhookSecret) throw new Error('Missing Stripe webhook signature or secret');
   const event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
-  if (event.livemode !== stripeModeIsLive(stripe)) throw new Error('Stripe event environment mismatch');
+  if (process.env.XPAY_STRIPE_MODE !== 'test') throw new Error('Stripe webhook staging requires test mode');
+  if (event.livemode) throw new Error('Live Stripe events are disabled in staging');
   return store.applyEventOnce(normalizeStripeEvent(event));
 }
 
-function stripeModeIsLive(stripe: Stripe): boolean {
-  // Mode is controlled by the deployment configuration, never inferred from event payload.
-  // Stripe client does not expose its key; deployment must provide this value instead.
-  void stripe;
-  return process.env.XPAY_STRIPE_MODE === 'live';
-}
