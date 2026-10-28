@@ -22,5 +22,7 @@ jobs:
         run: npm install --include=dev --no-audit --no-fund
       - name: TypeScript checks
         run: npm run check
+      - name: Stripe reconciliation unit tests
+        run: npm test
       - name: Production frontend build
         run: npm run build
