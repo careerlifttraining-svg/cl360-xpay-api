@@ -9,6 +9,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createStagingReconciliationStore} from './postgres-reconciliation.js';
 import {reconcileVerifiedStripeWebhook} from './stripe-reconciliation.js';
+import {requireStaffRole} from './staff-auth.js';
 
 const app=express(); const port=Number(process.env.PORT||8787);
 const stagingWebhookEnabled=process.env.XPAY_STAGING_WEBHOOK_ENABLED==='true';
@@ -45,7 +46,7 @@ const customers:SandboxRecord[]=[{id:'cus_demo_horizon',workspaceId:'careerLift3
 const invoices:SandboxRecord[]=[{id:'inv_demo_001',workspaceId:'careerLift360',number:'INV-000124',customerName:'Northline Legal',amount:320000,status:'sent',dueAt:'2026-07-30',createdAt:'2026-07-12T16:00:00.000Z'}];
 const paymentLinks:SandboxRecord[]=[];
 const audit=(action:string,actor='demo-admin',metadata={})=>events.unshift({id:crypto.randomUUID(),action,actor,metadata,at:new Date().toISOString()});
-const requireRole=(...allowed:string[])=>(req: Request, res: Response, next: NextFunction)=>{if(process.env.NODE_ENV==='production'||process.env.DEMO_AUTH!=='true')return res.status(503).json({error:'Staff authentication is not configured; demo access is disabled'});const role=String(req.header('x-demo-role')||'');if(!['admin','finance','support','viewer'].includes(role))return res.status(401).json({error:'Explicit demo role required'});if(!allowed.includes(role))return res.status(403).json({error:'Insufficient role'});next()};
+const requireRole=(...allowed: Array<'admin'|'finance'|'support'|'viewer'>)=>(req: Request, res: Response, next: NextFunction)=>{if(process.env.NODE_ENV==='production')return requireStaffRole(...allowed)(req,res,next);if(process.env.DEMO_AUTH!=='true')return res.status(503).json({error:'Demo access is disabled'});const role=String(req.header('x-demo-role')||'');if(!['admin','finance','support','viewer'].includes(role))return res.status(401).json({error:'Explicit demo role required'});if(!allowed.includes(role as typeof allowed[number]))return res.status(403).json({error:'Insufficient role'});next()};
 const requireCustomerData=(req: Request, res: Response, next: NextFunction)=>String(process.env.CUSTOMER_DATA_ENABLED ?? '').toLowerCase()==='true'?next():res.status(404).json({error:'Customer data is disabled'});
 const requireGptAction=(req: Request, res: Response, next: NextFunction)=>{if(process.env.NODE_ENV==='production')return res.status(503).json({error:'GPT financial actions require production identity and workspace authorization'});if(String(process.env.GPT_ACTIONS_ENABLED ?? '').toLowerCase()!=='true')return res.status(404).json({error:'GPT Actions are disabled'});const supplied=req.header('authorization')?.replace(/^Bearer\s+/i,'')||'';const expected=process.env.GPT_ACTIONS_API_KEY||'';if(!expected||supplied.length!==expected.length||!crypto.timingSafeEqual(Buffer.from(supplied),Buffer.from(expected)))return res.status(401).json({error:'Unauthorized'});next()};
 
