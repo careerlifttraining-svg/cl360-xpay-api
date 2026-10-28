@@ -35,6 +35,10 @@ services:
         value: "300"
       - key: XPAY_STAGING_WEBHOOK_ENABLED
         value: "false"
+      - key: XPAY_STAFF_AUTH_ENABLED
+        value: "false"
+      - key: XPAY_STAFF_TOKEN_SECRET
+        sync: false
       - key: XPAY_LIVE_PAYMENT_LINKS_APPROVED
         value: "false"
       - key: PAYPAL_ENABLED
