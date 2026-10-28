@@ -38,6 +38,10 @@ export function createStagingReconciliationStore(): {pool: pg.Pool;store: Postgr
   if (process.env.XPAY_STRIPE_MODE !== 'test') throw new Error('Staging reconciliation requires Stripe test mode');
   const connectionString = process.env.XPAY_DATABASE_URL;
   if (!connectionString) throw new Error('XPAY_DATABASE_URL is required');
+  const parsed = new URL(connectionString);
+  if (!['postgres:', 'postgresql:'].includes(parsed.protocol)) throw new Error('XPAY_DATABASE_URL must use PostgreSQL');
+  const local = ['localhost','127.0.0.1','::1'].includes(parsed.hostname);
+  if (!local && !['require','verify-ca','verify-full'].includes(parsed.searchParams.get('sslmode') || '')) throw new Error('Remote staging PostgreSQL requires explicit TLS sslmode');
   const pool = new pg.Pool({connectionString, max: 5, connectionTimeoutMillis: 5000, idleTimeoutMillis: 30000});
   return {pool,store:new PostgresReconciliationStore(pool)};
 }
