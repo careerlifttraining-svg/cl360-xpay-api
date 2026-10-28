@@ -15,12 +15,6 @@ type HealthResponse={
 
 const money=(n:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n);
 
-const transactions=[
- {id:'XP-84291',customer:'Horizon Ability Group',service:'ADA consulting retainer',date:'Jul 14, 2026',amount:2400,status:'Paid'},
- {id:'XP-84290',customer:'Maya Richardson',service:'AI strategy session',date:'Jul 13, 2026',amount:650,status:'Paid'},
- {id:'XP-84289',customer:'Northline Legal',service:'Expert witness deposit',date:'Jul 12, 2026',amount:3200,status:'Pending'},
- {id:'XP-84288',customer:'Carter Studios',service:'CL360 Music license',date:'Jul 11, 2026',amount:480,status:'Paid'},
-];
 
 const nav:[View,any][]=[
  ['Overview',LayoutDashboard],
@@ -90,8 +84,8 @@ function App(){
   }
  };
 
- const statusTitle=apiReady===false?'API offline':liveMode?'Live mode active':'Stripe connection detected';
- const statusText=apiReady===null?'Checking secure API…':apiReady?(liveMode?'Live payments enabled':'API connected · verify live processing'):'Check Render logs';
+ const statusTitle=apiReady===false?'API offline':'Payment verification pending';
+ const statusText=apiReady===null?'Checking API…':apiReady?'Do not treat sample records as revenue':'Check Render logs';
 
  return <div className="app">
   <a className="skip" href="#main">Skip to main content</a>
@@ -110,7 +104,7 @@ function App(){
      <button key={name} className={view===name?'active':''} onClick={()=>select(name)}>
       <Icon size={19}/>
       <span>{name}</span>
-      {name==='Invoices'&&<i>3</i>}
+      {false&&<i>3</i>}
      </button>
     )}
    </nav>
@@ -136,10 +130,10 @@ function App(){
      <kbd>⌘ K</kbd>
     </div>
     <div className="header-actions">
-     <span className="test-dot">{liveMode?'LIVE':'CONNECTING'}</span>
+     <span className="test-dot">{'UNVERIFIED'}</span>
      <button aria-label="Notifications"><Bell size={20}/><i/></button>
      <div className="avatar">DR</div>
-     <div className="user"><b>Dr. Riggins</b><small>Administrator</small></div>
+     <div className="user"><b>CareerLift360</b><small>Administrator</small></div>
     </div>
    </header>
 
@@ -158,9 +152,9 @@ function App(){
     <div className="sandbox">
      <ShieldCheck size={19}/>
      <span>
-      <b>{apiReady===false?'Dashboard unavailable.':liveMode?'Production workspace.':'Stripe-connected workspace.'}</b>
+      <b>{apiReady===false?'Dashboard unavailable.':'Payment reporting not yet verified.'}</b>
       {' '}
-      {apiReady===false?'The API is not responding.':liveMode?'Live payments are enabled for this workspace.':'Complete the live processing check before accepting payments.'}
+      {apiReady===false?'The API is not responding.':'Do not rely on sample data for accounting or financial decisions.'}
      </span>
      <a href="https://www.cl360ai.com">CL360AI.com <ArrowUpRight size={15}/></a>
     </div>
@@ -294,81 +288,27 @@ function Feature({icon,title,text}:{icon:React.ReactNode,title:string,text:strin
 
 function DashboardPreview(){
  return <div className="hero-preview">
-  <div className="preview-top"><span><i/> CL360 xPay</span><em>LIVE</em></div>
+  <div className="preview-top"><span><i/> CL360 xPay</span><em>DEMO</em></div>
   <div className="preview-body">
    <p>Gross volume</p>
-   <strong>$6,730.00</strong>
-   <span className="preview-up">↑ 12.4% this month</span>
+   <strong>Sample preview</strong>
+   <span className="preview-up">Illustration only · not financial data</span>
    <div className="mini-chart"><i/><i/><i/><i/><i/><i/><i/></div>
-   <div className="preview-cards"><span><small>Successful</small><b>48</b></span><span><small>Customers</small><b>36</b></span></div>
+   <div className="preview-cards"><span><small>Transactions</small><b>Demo</b></span><span><small>Customers</small><b>Demo</b></span></div>
   </div>
   <div className="float-card"><ShieldCheck/><span><b>Stripe connected</b><small>Provider-hosted checkout</small></span></div>
  </div>;
 }
 
 function Overview({onCreate}:{onCreate:()=>void}){
- return <>
-  <section className="metrics" aria-label="Payment metrics">
-   <article><div><span>Gross volume</span><CircleDollarSign/></div><strong>{money(6730)}</strong><p><b>↑ 12.4%</b> from last month</p></article>
-   <article><div><span>Successful payments</span><CreditCard/></div><strong>48</strong><p><b>↑ 8.2%</b> from last month</p></article>
-   <article><div><span>Outstanding invoices</span><FileText/></div><strong>{money(3850)}</strong><p><em>3 invoices</em> need attention</p></article>
-   <article><div><span>Active customers</span><Users/></div><strong>36</strong><p><b>↑ 4</b> new this month</p></article>
-  </section>
-
-  <section className="grid">
-   <article className="panel activity-panel">
-    <div className="panel-head"><div><h2>Revenue activity</h2><p>Payment volume over the last 7 days</p></div><select aria-label="Revenue date range"><option>Last 7 days</option></select></div>
-    <div className="chart">
-     <div className="ylabels"><span>$2k</span><span>$1.5k</span><span>$1k</span><span>$500</span><span>$0</span></div>
-     <svg viewBox="0 0 700 220" role="img" aria-label="Revenue rises from Monday through Sunday">
-      <defs><linearGradient id="fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#7c5cff" stopOpacity=".25"/><stop offset="1" stopColor="#7c5cff" stopOpacity="0"/></linearGradient></defs>
-      <path className="area" d="M0 170 C60 160 75 125 130 135 S210 170 265 120 S360 80 410 100 S510 145 555 70 S640 55 700 20 L700 220 L0 220Z"/>
-      <path className="line" d="M0 170 C60 160 75 125 130 135 S210 170 265 120 S360 80 410 100 S510 145 555 70 S640 55 700 20"/>
-     </svg>
-     <div className="xlabels"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
-    </div>
-   </article>
-
-   <article className="panel quick">
-    <div className="panel-head"><div><h2>Quick actions</h2><p>Move work forward</p></div></div>
-    <button onClick={onCreate}><span><Link2/></span><div><b>Payment link</b><small>Create a shareable checkout</small></div><ChevronRight/></button>
-    <button><span><FileText/></span><div><b>New invoice</b><small>Bill a client professionally</small></div><ChevronRight/></button>
-    <button><span><Users/></span><div><b>Add customer</b><small>Build your client directory</small></div><ChevronRight/></button>
-    <button><span><WalletCards/></span><div><b>Payment methods</b><small>Manage payment providers</small></div><ChevronRight/></button>
-   </article>
-  </section>
-
-  <section className="panel tx">
-   <div className="panel-head"><div><h2>Recent transactions</h2><p>Your latest payment activity</p></div><button>View all <ArrowUpRight size={15}/></button></div>
-   <TransactionTable/>
-  </section>
-
-  <section className="ai-card">
-   <div className="ai-icon"><Sparkles/></div>
-   <div><p className="eyebrow">CL360 BUSINESS CFO™</p><h2>Your AI finance copilot is ready.</h2><p>Connect transaction events to cash-flow insights, reconciliation workflows, and tax-ready summaries.</p></div>
-   <button>Explore integration <ArrowUpRight size={16}/></button>
-  </section>
- </>;
+ return <section className="panel data-view" aria-label="Financial reporting status">
+  <div className="panel-head"><div><h2>Financial reporting is being connected</h2><p>Verified Stripe transactions and invoices will appear here after reconciliation is enabled.</p></div></div>
+  <div className="empty"><ShieldCheck/><h3>No verified financial totals available</h3><p>Historical demonstration totals have been hidden to avoid presenting sample figures as actual revenue.</p><button className="primary" onClick={onCreate}>Payment link tools <ArrowRight size={17}/></button></div>
+ </section>;
 }
 
 function TransactionTable(){
- return <div className="table-wrap">
-  <table>
-   <thead><tr><th>Transaction</th><th>Customer</th><th>Service</th><th>Date</th><th>Status</th><th>Amount</th></tr></thead>
-   <tbody>
-    {transactions.map(transaction=>
-     <tr key={transaction.id}>
-      <td><b>{transaction.id}</b></td>
-      <td>{transaction.customer}</td>
-      <td>{transaction.service}</td>
-      <td>{transaction.date}</td>
-      <td><span className={'status '+transaction.status.toLowerCase()}>{transaction.status}</span></td>
-      <td><b>{money(transaction.amount)}</b></td>
-     </tr>
-    )}
-   </tbody>
-  </table>
- </div>;
+ return <div className="empty" role="status"><Activity/><h3>Transactions awaiting verified data</h3><p>Payment history will be displayed after authenticated Stripe reconciliation is connected. No demonstration transactions are included.</p></div>;
 }
 
 type ApiRecord={
